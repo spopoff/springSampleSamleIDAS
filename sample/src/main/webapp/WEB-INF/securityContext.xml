@@ -115,6 +115,7 @@
     <bean id="metadataGeneratorFilter" class="org.springframework.security.saml.metadata.MetadataGeneratorFilter">
         <constructor-arg>
             <bean class="org.springframework.security.saml.metadata.MetadataGenerator">
+                <property name="entityId" value="http://countrya.spopoff.com:8080/SP/metadata"/>
                 <property name="extendedMetadata">
                     <bean class="org.springframework.security.saml.metadata.ExtendedMetadata">
                         <property name="idpDiscoveryEnabled" value="true"/>
@@ -162,11 +163,11 @@
                 <bean class="org.opensaml.saml2.metadata.provider.HTTPMetadataProvider">
                     <!-- URL containing the metadata -->
                     <constructor-arg>
-                        <value type="java.lang.String">http://idp.ssocircle.com/idp-meta.xml</value>
+                        <value type="java.lang.String">http://countryc.spopoff.com:8080/EidasNode/ServiceMetadata</value>
                     </constructor-arg>
                     <!-- Timeout for metadata loading in ms -->
                     <constructor-arg>
-                        <value type="int">15000</value>
+                        <value type="int">5000</value>
                     </constructor-arg>
                     <property name="parserPool" ref="parserPool"/>
                 </bean>
