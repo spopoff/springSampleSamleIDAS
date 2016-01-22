@@ -39,9 +39,12 @@ public class WebSSOProfileOptions implements Serializable, Cloneable {
     private Boolean forceAuthn = false;
     private Boolean includeScoping = true;
     private Integer proxyCount = 2;
+    private Boolean includeEidas;
+    private String issuer;
 
     private String relayState;
     private Collection<String> authnContexts;
+    private Collection<String> eidasAttributes;
     private AuthnContextComparisonTypeEnumeration authnContextComparison = AuthnContextComparisonTypeEnumeration.EXACT;
 
     public WebSSOProfileOptions() {
@@ -55,6 +58,14 @@ public class WebSSOProfileOptions implements Serializable, Cloneable {
         return binding;
     }
 
+    public String getIssuer() {
+        return issuer;
+    }
+
+    public void setIssuer(String issuer) {
+        this.issuer = issuer;
+    }
+
     /**
      * Sets binding to be used for for sending SAML message to IDP.
      *
@@ -66,6 +77,22 @@ public class WebSSOProfileOptions implements Serializable, Cloneable {
      */
     public void setBinding(String binding) {
         this.binding = binding;
+    }
+
+    public Collection<String> getEidasAttributes() {
+        return eidasAttributes;
+    }
+
+    public void setEidasAttributes(Collection<String> eidasAttributes) {
+        this.eidasAttributes = eidasAttributes;
+    }
+
+    public Boolean getIncludeEidas() {
+        return includeEidas;
+    }
+
+    public void setIncludeEidas(Boolean includeEidas) {
+        this.includeEidas = includeEidas;
     }
 
     /**

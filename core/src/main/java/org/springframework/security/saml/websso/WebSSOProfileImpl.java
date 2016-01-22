@@ -14,6 +14,12 @@
  */
 package org.springframework.security.saml.websso;
 
+import eu.eidas.auth.engine.core.eidas.EidasExtensionConfiguration;
+import eu.eidas.auth.engine.core.eidas.SPType;
+import eu.eidas.auth.engine.core.eidas.impl.RequestedAttributesUnmarshaller;
+import eu.eidas.auth.engine.core.eidas.impl.SPTypeBuilder;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLObjectBuilder;
 import org.opensaml.common.SAMLRuntimeException;
@@ -35,6 +41,18 @@ import org.springframework.security.saml.storage.SAMLMessageStorage;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import javax.xml.namespace.QName;
+import org.opensaml.common.xml.SAMLSchemaBuilder;
+import org.opensaml.saml2.common.Extensions;
+import org.opensaml.saml2.common.impl.ExtensionsBuilder;
+import org.opensaml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
+import org.opensaml.xml.XMLObject;
+import org.opensaml.xml.io.UnmarshallingException;
+import org.opensaml.xml.parse.BasicParserPool;
+import org.opensaml.xml.parse.XMLParserException;
+import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 /**
  * Class implements WebSSO profile and offers capabilities for SP initialized SSO and
@@ -44,6 +62,11 @@ import java.util.Set;
  * @author Vladimir Schafer
  */
 public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProfile {
+    
+    private final String NAME_FORMAT_EIDAS = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
+    private final String NAME_ISSUER_FORMAT_EIDAS = "urn:oasis:names:tc:SAML:2.0:nameid-format:entity";
+    private final String NAME_POLICY_FORMAT_EIDAS="urn:oasis:names:tc:SAML:1.1:nameid-format:unspecified";
+    private final String EIDAS_PUBLIC = "public";
 
     public WebSSOProfileImpl() {
     }
@@ -83,11 +106,18 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
         if (spDescriptor == null || idpssoDescriptor == null || idpExtendedMetadata == null) {
             throw new SAMLException("SPSSODescriptor, IDPSSODescriptor or IDPExtendedMetadata are not present in the SAMLContext");
         }
+        log.debug("idpExtendedMetadata.getSigningAlgorithm="+idpExtendedMetadata.getSigningAlgorithm());
+        idpExtendedMetadata.setSigningAlgorithm("http://www.w3.org/2001/04/xmldsig-more#rsa-sha512");
 
         SingleSignOnService ssoService = getSingleSignOnService(options, idpssoDescriptor, spDescriptor);
         AssertionConsumerService consumerService = getAssertionConsumerService(options, idpssoDescriptor, spDescriptor);
+        
         AuthnRequest authRequest = getAuthnRequest(context, options, consumerService, ssoService);
-
+        if(authRequest==null){
+            throw new SAMLException("Erreur dans getAuthnRequest null");
+        }
+        //authRequest.setForceAuthn(Boolean.TRUE);
+        log.debug("getAuthnRequest.providerName="+authRequest.getProviderName());
         // TODO optionally implement support for conditions, subject
 
         context.setCommunicationProfileId(getProfileIdentifier());
@@ -100,10 +130,12 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
         if (options.getRelayState() != null) {
             context.setRelayState(options.getRelayState());
         }
-
+        
         boolean sign = spDescriptor.isAuthnRequestsSigned() || idpssoDescriptor.getWantAuthnRequestsSigned();
+        log.debug("signature?"+sign+" avec http://www.w3.org/2001/04/xmldsig-more#rsa-sha512");
+        context.getLocalExtendedMetadata().setSigningAlgorithm("http://www.w3.org/2001/04/xmldsig-more#rsa-sha512");
         sendMessage(context, sign);
-
+        
         SAMLMessageStorage messageStorage = context.getMessageStorage();
         if (messageStorage != null) {
             messageStorage.storeMessage(authRequest.getID(), authRequest);
@@ -189,6 +221,7 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
         if (spDescriptor.getDefaultAssertionConsumerService() != null && isEndpointSupported(spDescriptor.getDefaultAssertionConsumerService())) {
             AssertionConsumerService service = spDescriptor.getDefaultAssertionConsumerService();
             log.debug("Using default consumer service with binding {}", service.getBinding());
+            log.debug("Default ACS url="+service.getLocation());
             return service;
         }
 
@@ -256,7 +289,72 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
         request.setForceAuthn(options.getForceAuthN());
         request.setProviderName(options.getProviderName());
         request.setVersion(SAMLVersion.VERSION_20);
-
+        if(options.getIncludeEidas()){
+            //ne sert à rien
+//            request.setAssertionConsumerServiceURL(options.getIssuer());
+//            IssuerBuilder issuerBuilder = new IssuerBuilder();
+//            Issuer issuer = issuerBuilder.buildObject();
+//            issuer.setFormat(NAME_ISSUER_FORMAT_EIDAS);
+//            log.debug("issuer="+options.getIssuer());
+//            issuer.setValue(options.getIssuer());	
+//            request.setIssuer(issuer);
+            NameIDPolicy nameIDPolicy = new NameIDPolicyBuilder().buildObject();
+            nameIDPolicy.setFormat(NAME_POLICY_FORMAT_EIDAS);
+            nameIDPolicy.setAllowCreate(true);
+            request.setNameIDPolicy(nameIDPolicy);
+            QName eidas = new QName("xmlns:eidas","http://eidas.europa.eu/saml-extensions");
+            request.getNamespaceManager().registerAttributeName(eidas);
+            Extensions extEidas = new ExtensionsBuilder().buildObject("urn:oasis:names:tc:SAML:2.0:protocol","Extensions","saml2p");
+            //Extensions extEidas = new EidasExtensions();
+            Collection<String> colAttr = options.getEidasAttributes();
+            //XSAnyBuilder raBuild = new XSAnyBuilder();
+            //<eidas:SPType>public</eidas:SPType>
+            SPType pub = new SPTypeBuilder().buildObject("http://eidas.europa.eu/saml-extensions", "SPType", "eidas");
+            //pub.setTextContent(EIDAS_PUBLIC);
+            pub.setSPType(EIDAS_PUBLIC);
+            //XSAny attrs = new XSAnyBuilder().buildObject("http://eidas.europa.eu/saml-extensions", "RequestedAttributes", "eidas");
+            extEidas.getUnknownXMLObjects().add(pub);
+            //XSAnyBuilder anyBuilder = (XSAnyBuilder) Configuration.getBuilderFactory().getBuilder(XSAny.TYPE_NAME);
+            String resAttrs = "<eidas:RequestedAttributes xmlns:eidas=\"http://eidas.europa.eu/saml-extensions\">";
+            for(String attr: colAttr){
+                resAttrs += oneAttribute(attr);
+            }
+            resAttrs +="</eidas:RequestedAttributes>";
+            log.debug("resAttrs="+resAttrs);
+            EidasExtensionConfiguration eidasExt = new EidasExtensionConfiguration();
+            eidasExt.configureExtension();
+            SAMLSchemaBuilder.addExtensionSchema("/schema/saml_eidas_extension.xsd");
+            BasicParserPool ppMgr = new BasicParserPool();
+            ppMgr.setNamespaceAware(true);
+            try {
+                ppMgr.setSchema(SAMLSchemaBuilder.getSAML11Schema());
+            } catch (SAXException ex) {
+                log.error("Erreur schema="+ex);
+                return null;
+            }
+            InputStream is = new ByteArrayInputStream(resAttrs.getBytes());
+            Document domAttrsRaq = null;
+            try {
+                domAttrsRaq = ppMgr.parse(is);
+            } catch (XMLParserException e) {
+                log.error("Erreur dom="+e);
+                return null;
+            }
+            if(domAttrsRaq==null){
+                log.error("Erreur dom vide");
+                return null;
+            }
+             RequestedAttributesUnmarshaller unMars = new RequestedAttributesUnmarshaller();
+             XMLObject attrs = null;
+             try {
+                 attrs = unMars.unmarshall(domAttrsRaq.getDocumentElement());
+             } catch (UnmarshallingException e) {
+                    System.err.println("Erreur unMarsh error="+e);
+             }
+            
+            extEidas.getUnknownXMLObjects().add(attrs);
+            request.setExtensions(extEidas);
+        }
         buildCommonAttributes(context.getLocalEntityId(), request, bindingService);
 
         buildScoping(request, bindingService, options);
@@ -266,6 +364,11 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
 
         return request;
 
+    }
+    private String oneAttribute(String name){
+        String ret = "<eidas:RequestedAttribute Name=\"";
+        ret += name+"\" NameFormat=\"urn:oasis:names:tc:SAML:2.0:attrname-format:uri\" isRequired=\"false\"/>";
+        return ret;
     }
 
     /**
@@ -321,6 +424,7 @@ public class WebSSOProfileImpl extends AbstractProfileBase implements WebSSOProf
             }
 
             request.setRequestedAuthnContext(authnContext);
+            log.debug("ajoute RequestedAuthnContext="+request.toString());
 
         }
 

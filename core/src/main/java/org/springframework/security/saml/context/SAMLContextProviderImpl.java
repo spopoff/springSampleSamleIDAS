@@ -63,6 +63,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.xml.namespace.QName;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import org.opensaml.xml.security.BasicSecurityConfiguration;
+import org.opensaml.xml.signature.SignatureConstants;
 
 /**
  * Class is responsible for parsing HttpRequest/Response and determining which local entity (IDP/SP) is responsible
@@ -187,7 +189,7 @@ public class SAMLContextProviderImpl implements SAMLContextProvider, Initializin
         if (entityDescriptor == null || roleDescriptor == null) {
             throw new MetadataProviderException("Metadata for entity " + peerEntityId + " and role " + peerEntityRole + " wasn't found");
         }
-
+        logger.debug("populatePeerContext extendedMetadata.getSigningAlgorithm="+extendedMetadata.getSigningAlgorithm());
         samlContext.setPeerEntityMetadata(entityDescriptor);
         samlContext.setPeerEntityRoleMetadata(roleDescriptor);
         samlContext.setPeerExtendedMetadata(extendedMetadata);
@@ -421,10 +423,13 @@ public class SAMLContextProviderImpl implements SAMLContextProvider, Initializin
      */
     protected void populateTrustEngine(SAMLMessageContext samlContext) {
         SignatureTrustEngine engine;
+        BasicSecurityConfiguration config = (BasicSecurityConfiguration) Configuration.getGlobalSecurityConfiguration();
+        config.setSignatureReferenceDigestMethod(SignatureConstants.ALGO_ID_DIGEST_SHA512);
+        logger.debug("force digestAlgo="+SignatureConstants.ALGO_ID_DIGEST_SHA512);
         if ("pkix".equalsIgnoreCase(samlContext.getLocalExtendedMetadata().getSecurityProfile())) {
-            engine = new PKIXSignatureTrustEngine(pkixResolver, Configuration.getGlobalSecurityConfiguration().getDefaultKeyInfoCredentialResolver(), pkixTrustEvaluator, new BasicX509CredentialNameEvaluator());
+            engine = new PKIXSignatureTrustEngine(pkixResolver, config.getDefaultKeyInfoCredentialResolver(), pkixTrustEvaluator, new BasicX509CredentialNameEvaluator());
         } else {
-            engine = new ExplicitKeySignatureTrustEngine(metadataResolver, Configuration.getGlobalSecurityConfiguration().getDefaultKeyInfoCredentialResolver());
+            engine = new ExplicitKeySignatureTrustEngine(metadataResolver, config.getDefaultKeyInfoCredentialResolver());
         }
         samlContext.setLocalTrustEngine(engine);
     }

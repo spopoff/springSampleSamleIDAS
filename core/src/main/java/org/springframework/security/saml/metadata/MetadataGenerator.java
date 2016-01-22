@@ -466,13 +466,33 @@ public class MetadataGenerator {
         discovery.setLocation(getDiscoveryResponseURL(entityBaseURL, entityAlias));
         return discovery;
     }
-
+    /**
+     * fabrique le endPoint pour le logout
+     * @param entityBaseURL
+     * @param entityAlias
+     * @param binding
+     * @return 
+     */
     protected SingleLogoutService getSingleLogoutService(String entityBaseURL, String entityAlias, String binding) {
         SAMLObjectBuilder<SingleLogoutService> builder = (SAMLObjectBuilder<SingleLogoutService>) builderFactory.getBuilder(SingleLogoutService.DEFAULT_ELEMENT_NAME);
         SingleLogoutService logoutService = builder.buildObject();
         logoutService.setLocation(getServerURL(entityBaseURL, entityAlias, getSAMLLogoutFilterPath()));
         logoutService.setBinding(binding);
         return logoutService;
+    }
+    /**
+     * fabrique le endPoint pour le signon
+     * @param entityBaseURL
+     * @param entityAlias
+     * @param binding
+     * @return 
+     */
+    protected SingleSignOnService getSingleSignOnService(String entityBaseURL, String entityAlias, String binding) {
+        SAMLObjectBuilder<SingleSignOnService> builder = (SAMLObjectBuilder<SingleSignOnService>) builderFactory.getBuilder(SingleSignOnService.DEFAULT_ELEMENT_NAME);
+        SingleSignOnService signonService = builder.buildObject();
+        signonService.setLocation(getServerURL(entityBaseURL, entityAlias, getSAMLLogoutFilterPath()));
+        signonService.setBinding(binding);
+        return signonService;
     }
 
     /**

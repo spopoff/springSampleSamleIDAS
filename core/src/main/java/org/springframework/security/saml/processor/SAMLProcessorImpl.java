@@ -218,6 +218,7 @@ public class SAMLProcessorImpl implements SAMLProcessor {
         if (sign) {
             Assert.notNull(samlContext.getLocalSigningCredential(), "Cannot sign outgoing message as no signing credential is set in the context");
             samlContext.setOutboundSAMLMessageSigningCredential(samlContext.getLocalSigningCredential());
+            log.debug("on va signer avec un algo="+samlContext.getLocalExtendedMetadata().getSigningAlgorithm()+" ou="+samlContext.getPeerEntityMetadata().getSignature().getSignatureAlgorithm());
         }
 
         MessageEncoder encoder = binding.getMessageEncoder();

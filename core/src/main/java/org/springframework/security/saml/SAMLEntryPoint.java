@@ -103,6 +103,7 @@ public class SAMLEntryPoint extends GenericFilterBean implements AuthenticationE
             chain.doFilter(request, response);
             return;
         }
+        logger.debug("une requête SAML="+fi.getRequestUrl());
 
         commence(fi.getRequest(), fi.getResponse(), null);
 
@@ -144,7 +145,8 @@ public class SAMLEntryPoint extends GenericFilterBean implements AuthenticationE
         try {
 
             SAMLMessageContext context = contextProvider.getLocalAndPeerEntity(request, response);
-
+            //est-ce que le message ne serait pas déjà formé ?
+            logger.debug("commence getLocalExtendedMetadata.getSigningAlgorithm="+context.getLocalExtendedMetadata().getSigningAlgorithm());
             if (isECP(context)) {
                 initializeECP(context, e);
             } else if (isDiscovery(context)) {
@@ -222,7 +224,7 @@ public class SAMLEntryPoint extends GenericFilterBean implements AuthenticationE
         }
 
         // Ordinary WebSSO
-        logger.debug("Processing SSO using WebSSO profile");
+        logger.debug("Processing SSO using WebSSO profile signature ext MD="+context.getLocalExtendedMetadata().getSigningAlgorithm());
         webSSOprofile.sendAuthenticationRequest(context, options);
         samlLogger.log(SAMLConstants.AUTH_N_REQUEST, SAMLConstants.SUCCESS, context);
 

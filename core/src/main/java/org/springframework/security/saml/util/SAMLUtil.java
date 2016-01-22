@@ -395,6 +395,7 @@ public class SAMLUtil {
                 throw new MessageEncodingException("Unable to marshall message, no marshaller registered for message object: "
                                                    + message.getElementQName());
             }
+            logger.debug("mashall message="+message.toString()+" class="+marshaller.getClass().getCanonicalName());
             Element messageElem = marshaller.marshall(message);
             if (logger.isTraceEnabled()) {
                 logger.trace("Marshalled message into DOM:\n{}", XMLHelper.nodeToString(messageElem));
