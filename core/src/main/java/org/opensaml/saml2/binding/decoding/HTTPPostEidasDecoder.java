@@ -56,6 +56,16 @@ public class HTTPPostEidasDecoder extends BaseSAML2MessageDecoder{
             throw new MessageDecodingException(
                     "Invalid inbound message transport type, this decoder only support HTTPInTransport");
         }
+        if(body==null){
+            logger.error("Pas de body (null), pas de message");
+            throw new MessageDecodingException(
+                    "Pas de body, pas de message");
+        }
+        if(body.isEmpty()){
+            logger.error("Pas de body (vide), pas de message");
+            throw new MessageDecodingException(
+                    "Pas de body, pas de message");
+        }
         int pos = body.indexOf("&RelayState=");
         logger.debug("le debut Body="+body.substring(0, 13)+" et la fin="+pos);
         String urlDec = null;

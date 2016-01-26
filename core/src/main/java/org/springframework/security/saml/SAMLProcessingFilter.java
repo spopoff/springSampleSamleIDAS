@@ -88,32 +88,17 @@ public class SAMLProcessingFilter extends AbstractAuthenticationProcessingFilter
             RequestClone req = new RequestClone(request);
             SAMLMessageContext context = contextProvider.getLocalEntity(req, response);
             
-//            InTransport inT = null;
-//            try {
-//                inT = context.getInboundMessageTransport();
-//            } catch (Exception e) {
-//                logger.debug("Erreur dans le message InTransport "+e);
-//            }
-//            if(inT==null){
-//                logger.debug("Message InTransport null");
+//            if(!context.isEidasIdP()){
+//                logger.debug("Message InTransport empty include /metadataeidas");
+//                RequestDispatcher requestDispatcher = request.getRequestDispatcher("/metadataeidas");
+//                try {
+//                    requestDispatcher.include(request, response);
+//                } catch (ServletException es) {
+//                    logger.error("Erreur forward servlet="+es);
+//                } catch (IOException ei) {
+//                    logger.error("Erreur forward io="+ei);
+//                }
 //                return null;
-//            }
-//            String inTstring = SAMLUtil.getStringFromInputStream(inT.getIncomingStream(), 10);
-            if(!context.isEidasIdP()){
-                logger.debug("Message InTransport empty include /metadataeidas");
-                RequestDispatcher requestDispatcher = request.getRequestDispatcher("/metadataeidas");
-                try {
-                    requestDispatcher.include(request, response);
-                } catch (ServletException es) {
-                    logger.error("Erreur forward servlet="+es);
-                } catch (IOException ei) {
-                    logger.error("Erreur forward io="+ei);
-                }
-                return null;
-            }
-//            logger.debug("context.getInboundSAMLBinding="+context.getInboundSAMLBinding());
-//            if(inTstring.startsWith("SAMLResponse")){
-//                logger.debug("getInboundMessageTransport contient SAMLResponse=");
 //            }
             
             processor.retrieveMessage(context);
