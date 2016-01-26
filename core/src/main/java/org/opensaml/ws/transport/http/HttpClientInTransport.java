@@ -31,6 +31,7 @@ public class HttpClientInTransport implements HTTPInTransport, LocationAwareInTr
 
     private final PostMethod postMethod;
     private final String endpointURI;
+    private boolean eidasResponse;
 
     public HttpClientInTransport(PostMethod postMethod, String endpointURI) {
         this.postMethod = postMethod;
@@ -119,5 +120,13 @@ public class HttpClientInTransport implements HTTPInTransport, LocationAwareInTr
 
     public HTTP_VERSION getVersion() {
         return null;
+    }
+
+    public boolean isEidasResponse() {
+        return eidasResponse;
+    }
+
+    public void setEidasResponse(boolean eidasResponse) {
+        this.eidasResponse = eidasResponse;
     }
 }

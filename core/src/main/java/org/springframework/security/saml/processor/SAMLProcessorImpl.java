@@ -37,6 +37,12 @@ import org.springframework.util.Assert;
 import javax.xml.namespace.QName;
 import java.util.Arrays;
 import java.util.Collection;
+import org.opensaml.liberty.binding.encoding.HTTPPAOS11Encoder;
+import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
+import org.opensaml.saml2.binding.decoding.HTTPPostEidasDecoder;
+import org.opensaml.saml2.binding.encoding.HTTPPostEncoder;
+import org.opensaml.xml.parse.BasicParserPool;
+import org.springframework.security.saml.util.VelocityFactory;
 
 /**
  * Processor is capable of parsing SAML message from HttpServletRequest and populate the SAMLMessageContext
@@ -148,8 +154,14 @@ public class SAMLProcessorImpl implements SAMLProcessor {
      *          error verifying message
      */
     public SAMLMessageContext retrieveMessage(SAMLMessageContext samlContext, String binding) throws SAMLException, MetadataProviderException, MessageDecodingException, org.opensaml.xml.security.SecurityException {
-
-        return retrieveMessage(samlContext, getBinding(binding));
+        log.debug("retrieveMessage with binding="+binding);
+        if(samlContext.isEidasIdP()){
+            HTTPPostEidasDecoder decode = new HTTPPostEidasDecoder();
+            decode.setBody(samlContext.getBody());
+            return retrieveMessage(samlContext, new HTTPPostEidasBinding(decode,new HTTPPAOS11Encoder() ));
+        }else{
+            return retrieveMessage(samlContext, getBinding(binding));
+        }
 
     }
 
@@ -169,7 +181,14 @@ public class SAMLProcessorImpl implements SAMLProcessor {
      */
     public SAMLMessageContext retrieveMessage(SAMLMessageContext samlContext) throws SAMLException, MetadataProviderException, MessageDecodingException, org.opensaml.xml.security.SecurityException {
 
-        return retrieveMessage(samlContext, getBinding(samlContext.getInboundMessageTransport()));
+        log.debug("retrieveMessage alone");
+        if(samlContext.isEidasIdP()){
+            HTTPPostEidasDecoder decode = new HTTPPostEidasDecoder();
+            decode.setBody(samlContext.getBody());
+            return retrieveMessage(samlContext, new HTTPPostEidasBinding(decode,new HTTPPAOS11Encoder() ));
+        }else{
+            return retrieveMessage(samlContext, getBinding(samlContext.getInboundMessageTransport()));
+        }
 
     }
 

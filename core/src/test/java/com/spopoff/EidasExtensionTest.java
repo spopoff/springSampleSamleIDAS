@@ -23,6 +23,7 @@ import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import junit.framework.Assert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -136,5 +137,12 @@ public class EidasExtensionTest {
                 System.err.println("Erreur unMarsh error="+e);
          }
          //eidasExt.getUnknownXMLObjects().add(attrs);
+     }
+     @Test
+     public void substringue(){
+         String b64 = "SAMLResponse=PD94bW%3BSR65GE564G&RelayState=";
+         System.out.println(b64.substring(13));
+         int pos = b64.indexOf("&RelayState=");
+         Assert.assertEquals(b64.substring(13, pos), "PD94bW%3BSR65GE564G");
      }
 }

@@ -458,8 +458,9 @@ public class WebSSOProfileConsumerImpl extends AbstractProfileBase implements We
                 verifyAudience(context, conditions.getAudienceRestrictions());
 
             } else if (conditionQName.equals(OneTimeUse.DEFAULT_ELEMENT_NAME)) {
+                log.debug("Ne sait pas traiter la oneTimeUse");
 
-                throw new SAMLException("System cannot honor OneTimeUse condition of the Assertion for WebSSO");
+                //throw new SAMLException("System cannot honor OneTimeUse condition of the Assertion for WebSSO");
 
             } else if (conditionQName.equals(ProxyRestriction.DEFAULT_ELEMENT_NAME)) {
 

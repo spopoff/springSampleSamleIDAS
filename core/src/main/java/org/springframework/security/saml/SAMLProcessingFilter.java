@@ -18,6 +18,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import javax.servlet.RequestDispatcher;
+import javax.servlet.ServletException;
 import org.opensaml.common.SAMLException;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
@@ -38,6 +40,7 @@ import org.springframework.util.Assert;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.opensaml.ws.transport.InTransport;
+import org.springframework.security.saml.util.RequestClone;
 
 /**
  * Filter processes arriving SAML messages by delegating to the WebSSOProfile. After the SAMLAuthenticationToken
@@ -82,26 +85,42 @@ public class SAMLProcessingFilter extends AbstractAuthenticationProcessingFilter
             //attention ne reçoit pas que des réponses d'authent mais aussi des demandes de metaData
             
             logger.debug("Attempting SAML2 authentication using profile {}", getProfileName());
-            SAMLMessageContext context = contextProvider.getLocalEntity(request, response);
-            InTransport inT = null;
-            try {
-                inT = context.getInboundMessageTransport();
-            } catch (Exception e) {
-                logger.debug("Erreur dans le message InTransport "+e);
-            }
-            if(inT==null){
-                logger.debug("Message InTransport null");
+            RequestClone req = new RequestClone(request);
+            SAMLMessageContext context = contextProvider.getLocalEntity(req, response);
+            
+//            InTransport inT = null;
+//            try {
+//                inT = context.getInboundMessageTransport();
+//            } catch (Exception e) {
+//                logger.debug("Erreur dans le message InTransport "+e);
+//            }
+//            if(inT==null){
+//                logger.debug("Message InTransport null");
+//                return null;
+//            }
+//            String inTstring = SAMLUtil.getStringFromInputStream(inT.getIncomingStream(), 10);
+            if(!context.isEidasIdP()){
+                logger.debug("Message InTransport empty include /metadataeidas");
+                RequestDispatcher requestDispatcher = request.getRequestDispatcher("/metadataeidas");
+                try {
+                    requestDispatcher.include(request, response);
+                } catch (ServletException es) {
+                    logger.error("Erreur forward servlet="+es);
+                } catch (IOException ei) {
+                    logger.error("Erreur forward io="+ei);
+                }
                 return null;
             }
-            String inTstring = getStringFromInputStream(inT.getIncomingStream());
-            if(inTstring.isEmpty()){
-                logger.debug("Message InTransport empty");
-                return null;
-            }
+//            logger.debug("context.getInboundSAMLBinding="+context.getInboundSAMLBinding());
+//            if(inTstring.startsWith("SAMLResponse")){
+//                logger.debug("getInboundMessageTransport contient SAMLResponse=");
+//            }
+            
             processor.retrieveMessage(context);
 
             // Override set values
             context.setCommunicationProfileId(getProfileName());
+            
             context.setLocalEntityEndpoint(SAMLUtil.getEndpoint(context.getLocalEntityRoleMetadata().getEndpoints(), context.getInboundSAMLBinding(), context.getInboundMessageTransport()));
 
             SAMLAuthenticationToken token = new SAMLAuthenticationToken(context);
@@ -122,36 +141,6 @@ public class SAMLProcessingFilter extends AbstractAuthenticationProcessingFilter
         }
 
     }
-
-	private  String getStringFromInputStream(InputStream is) {
-
-		BufferedReader br = null;
-		StringBuilder sb = new StringBuilder();
-
-		String line;
-		try {
-
-			br = new BufferedReader(new InputStreamReader(is));
-			while ((line = br.readLine()) != null) {
-				sb.append(line);
-			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
-		} finally {
-			if (br != null) {
-				try {
-					br.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-
-		return sb.toString();
-
-	}
-
     /**
      * Name of the profile this used for authentication.
      *

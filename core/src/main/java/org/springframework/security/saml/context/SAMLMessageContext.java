@@ -32,7 +32,7 @@ import javax.net.ssl.HostnameVerifier;
  *
  * @author Vladimir Schaefer
  */
-public class SAMLMessageContext extends BasicSAMLMessageContext {
+public class SAMLMessageContext extends BasicSAMLMessageContext{
 
     private Decrypter localDecrypter;
     private Credential localSigningCredential;
@@ -47,6 +47,8 @@ public class SAMLMessageContext extends BasicSAMLMessageContext {
     private boolean peerUserSelected;
     private String inboundSAMLBinding;
     private SAMLMessageStorage messageStorage;
+    private boolean eidasIdP = false;
+    private String body;
 
     /**
      * Extended metadata of the local entity
@@ -230,4 +232,19 @@ public class SAMLMessageContext extends BasicSAMLMessageContext {
         this.messageStorage = messageStorage;
     }
 
+    public boolean isEidasIdP() {
+        return eidasIdP;
+    }
+
+    public void setEidasIdP(boolean eidasIdP) {
+        this.eidasIdP = eidasIdP;
+    }
+
+    public String getBody() {
+        return body;
+    }
+
+    public void setBody(String body) {
+        this.body = body;
+    }
 }

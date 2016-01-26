@@ -15,6 +15,7 @@
  */
 package org.springframework.security.saml.context;
 
+import java.io.IOException;
 import org.opensaml.common.xml.SAMLConstants;
 import org.opensaml.saml2.encryption.Decrypter;
 import org.opensaml.saml2.encryption.EncryptedElementTypeEncryptedKeyResolver;
@@ -104,6 +105,14 @@ public class SAMLContextProviderImpl implements SAMLContextProvider, Initializin
     public SAMLMessageContext getLocalEntity(HttpServletRequest request, HttpServletResponse response) throws MetadataProviderException {
 
         SAMLMessageContext context = new SAMLMessageContext();
+        String body = null;
+        try {
+            body = SAMLUtil.getStringFromInputStream(request.getInputStream());
+        } catch (IOException ex) {
+            logger.error("Erreur retrouve inpuStream "+ex);
+        }
+        context.setEidasIdP(SAMLUtil.isEidasIdpRequest(body));
+        context.setBody(body);
         populateGenericContext(request, response, context);
         populateLocalEntityId(context, request.getRequestURI());
         populateLocalContext(context);
@@ -252,6 +261,7 @@ public class SAMLContextProviderImpl implements SAMLContextProvider, Initializin
 
         if (requestURI == null) {
             requestURI = "";
+            logger.debug("requestURI est vide");
         }
 
         int filterIndex = requestURI.indexOf("/alias/");
@@ -287,9 +297,16 @@ public class SAMLContextProviderImpl implements SAMLContextProvider, Initializin
             context.setLocalEntityRole(localEntityRole);
 
         } else { // Defaults
-
-            context.setLocalEntityId(metadata.getHostedSPName());
-            context.setLocalEntityRole(SPSSODescriptor.DEFAULT_ELEMENT_NAME);
+            logger.debug("default context");
+//            if(context.isEidasIdP()){
+//                logger.debug("Choisit IDP defaut="+metadata.getDefaultIDP());
+//                context.setLocalEntityRole(IDPSSODescriptor.DEFAULT_ELEMENT_NAME);
+//                context.setLocalEntityId(metadata.getDefaultIDP());
+//            }else{
+                logger.debug("Choisit SP defaut="+metadata.getHostedSPName());
+                context.setLocalEntityId(metadata.getHostedSPName());
+                context.setLocalEntityRole(SPSSODescriptor.DEFAULT_ELEMENT_NAME);
+//            }
 
         }
 

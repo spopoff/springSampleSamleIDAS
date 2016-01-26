@@ -15,6 +15,10 @@
  */
 package org.springframework.security.saml.util;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import org.joda.time.DateTime;
 import org.opensaml.common.SAMLException;
 import org.opensaml.common.SAMLRuntimeException;
@@ -343,6 +347,8 @@ public class SAMLUtil {
         String requestURL = DatatypeHelper.safeTrimOrNullString(httpRequest.getRequestURL().toString());
         for (T endpoint : endpoints) {
             String binding = getBindingForEndpoint(endpoint);
+            QName nom = endpoint.getElementQName();
+            logger.debug("Element="+nom.getLocalPart());
             // Check that destination and binding matches
             if (binding.equals(messageBinding)) {
                 if (endpoint.getLocation() != null && uriComparator.compare(endpoint.getLocation(), requestURL)) {
@@ -570,6 +576,92 @@ public class SAMLUtil {
 
         return XMLHelper.nodeToString(element);
 
+    }
+    /**
+     * Retourne les premiers caractères de la stream
+     * @param length
+     * @param is
+     * @return une chaine de caractère
+     */
+    public static  String getStartStringFromInputStream(InputStream is, int length) {
+        CloneInputStream csis = null;
+        try {
+            csis = new CloneInputStream(is);
+        } catch (IOException e) {
+            logger.error("erreur récup inputstream "+e);
+            return "";
+        }
+        BufferedReader br = null;
+        StringBuilder sb = new StringBuilder();
+
+        try {
+
+            br = new BufferedReader(new InputStreamReader(csis));
+            char[] buf = new char[length];
+            br.read(buf,0,length);
+//            while ((line = br.readLine()) != null) {
+//                sb.append(line);
+//            }
+            sb.append(new String(buf));
+
+        } catch (IOException e) {
+            logger.error("erreur récup inputstream "+e);
+            return "";
+        }
+        try {
+            csis.close();
+        } catch (Exception e) {
+            logger.error("erreur fermeture inputstream "+e);
+        }
+        return sb.toString();
+
+    }
+    public static String getStringFromInputStream(InputStream is) {
+
+            BufferedReader br = null;
+            StringBuilder sb = new StringBuilder();
+
+            String line;
+            try {
+
+                    br = new BufferedReader(new InputStreamReader(is));
+                    while ((line = br.readLine()) != null) {
+                            sb.append(line);
+                    }
+
+            } catch (IOException e) {
+                    e.printStackTrace();
+            } finally {
+                    if (br != null) {
+                            try {
+                                    br.close();
+                            } catch (IOException e) {
+                                    e.printStackTrace();
+                            }
+                    }
+            }
+
+            return sb.toString();
+
+    }
+    /**
+     * test la présence d'une réponse dans le body
+     * @param request
+     * @return 
+     */
+    public static boolean isEidasIdpRequest(String body){
+        boolean ret = false;
+        if(body==null){
+            logger.debug("Body null ");
+            return ret;
+        }
+        if(body.isEmpty()){
+            logger.debug("Body vide ");
+            return ret;
+        }
+        logger.debug("Le Body="+body);
+        ret = body.startsWith("SAMLResponse");
+        return ret;
     }
 
 }

@@ -33,6 +33,9 @@ import org.opensaml.xml.signature.SignatureTrustEngine;
 import org.springframework.security.saml.context.SAMLMessageContext;
 
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.saml.util.SAMLUtil;
 
 /**
  * Http POST binding.
@@ -40,7 +43,7 @@ import java.util.List;
  * @author Mandus Elfving
  */
 public class HTTPPostBinding extends SAMLBindingImpl {
-
+    private final static Logger log = LoggerFactory.getLogger(HTTPPostBinding.class);
     /**
      * Pool for message deserializers.
      */
@@ -69,10 +72,18 @@ public class HTTPPostBinding extends SAMLBindingImpl {
     }
 
     public boolean supports(InTransport transport) {
+        boolean inTran = false;
         if (transport instanceof HTTPInTransport) {
             HTTPTransport t = (HTTPTransport) transport;
-            return "POST".equalsIgnoreCase(t.getHTTPMethod()) && (t.getParameterValue("SAMLRequest") != null || t.getParameterValue("SAMLResponse") != null);
+            log.debug("t.getHTTPMethod="+t.getHTTPMethod()+" t.getParameterValue(SAMLRequest)="+t.getParameterValue("SAMLRequest")+ " t.getParameterValue(SAMLResponse)="+t.getParameterValue("SAMLResponse"));
+            if(inTran){
+                log.debug("Message inboud begin");
+                return "POST".equalsIgnoreCase(t.getHTTPMethod()); //&& (t.getParameterValue("SAMLRequest") != null || t.getParameterValue("SAMLResponse") != null)
+            }else{
+                return "POST".equalsIgnoreCase(t.getHTTPMethod()) && (t.getParameterValue("SAMLRequest") != null || t.getParameterValue("SAMLResponse") != null);
+            }
         } else {
+            log.debug("transport pas type HTTPInTransport");
             return false;
         }
     }
