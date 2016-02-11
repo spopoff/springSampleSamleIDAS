@@ -14,12 +14,6 @@
  */
 package org.springframework.security.saml;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletException;
 import org.opensaml.common.SAMLException;
 import org.opensaml.saml2.metadata.provider.MetadataProviderException;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
@@ -39,7 +33,6 @@ import org.springframework.util.Assert;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import org.opensaml.ws.transport.InTransport;
 import org.springframework.security.saml.util.RequestClone;
 
 /**
@@ -82,25 +75,11 @@ public class SAMLProcessingFilter extends AbstractAuthenticationProcessingFilter
     public Authentication attemptAuthentication(HttpServletRequest request, HttpServletResponse response) throws AuthenticationException {
 
         try {
-            //attention ne reçoit pas que des réponses d'authent mais aussi des demandes de metaData
             
             logger.debug("Attempting SAML2 authentication using profile {}", getProfileName());
             RequestClone req = new RequestClone(request);
             SAMLMessageContext context = contextProvider.getLocalEntity(req, response);
-            
-//            if(!context.isEidasIdP()){
-//                logger.debug("Message InTransport empty include /metadataeidas");
-//                RequestDispatcher requestDispatcher = request.getRequestDispatcher("/metadataeidas");
-//                try {
-//                    requestDispatcher.include(request, response);
-//                } catch (ServletException es) {
-//                    logger.error("Erreur forward servlet="+es);
-//                } catch (IOException ei) {
-//                    logger.error("Erreur forward io="+ei);
-//                }
-//                return null;
-//            }
-            
+                       
             processor.retrieveMessage(context);
 
             // Override set values
@@ -205,6 +184,7 @@ public class SAMLProcessingFilter extends AbstractAuthenticationProcessingFilter
      * Gets the URL used to determine if this Filter is invoked
      * @return the URL used to determine if this Fitler is invoked
      */
+    @Override
     public String getFilterProcessesUrl() {
         return filterProcessesUrl;
     }
